@@ -1,0 +1,1621 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: AskMeAI API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication
+  - name: conversations
+    description: Chat conversations
+  - name: messages
+    description: Chat messages
+  - name: credits
+    description: User credits
+  - name: packages
+    description: Credit packages
+  - name: payment-methods
+    description: Payment methods
+  - name: orders
+    description: Payment orders
+  - name: admin
+    description: Admin operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /storage/uploads/request-url:
+    post:
+      operationId: requestStorageUploadUrl
+      tags: [payment-methods]
+      summary: Request a presigned URL for an admin asset upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestUploadUrlBody"
+      responses:
+        "200":
+          description: Presigned upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestUploadUrlResponse"
+        "400":
+          description: Invalid upload metadata
+        "401":
+          description: Unauthorized
+        "403":
+          description: Admin access required
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+
+  /conversations:
+    get:
+      operationId: listConversations
+      tags: [conversations]
+      summary: List user conversations
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Conversations list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Conversation"
+    post:
+      operationId: createConversation
+      tags: [conversations]
+      summary: Create new conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConversationInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+
+  /conversations/{id}:
+    get:
+      operationId: getConversation
+      tags: [conversations]
+      summary: Get conversation with messages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Conversation detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversationDetail"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateConversation
+      tags: [conversations]
+      summary: Update conversation title
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConversationUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+    delete:
+      operationId: deleteConversation
+      tags: [conversations]
+      summary: Delete conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /credits/balance:
+    get:
+      operationId: getCreditBalance
+      tags: [credits]
+      summary: Get user credit balance
+      responses:
+        "200":
+          description: Credit balance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditBalance"
+
+  /credits/history:
+    get:
+      operationId: getCreditHistory
+      tags: [credits]
+      summary: Get credit transaction history
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: number
+        - name: offset
+          in: query
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Credit history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditHistoryResponse"
+
+  /packages:
+    get:
+      operationId: listPackages
+      tags: [packages]
+      summary: List available credit packages
+      responses:
+        "200":
+          description: Packages list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Package"
+
+  /payment-methods:
+    get:
+      operationId: listPaymentMethods
+      tags: [payment-methods]
+      summary: List active payment methods
+      responses:
+        "200":
+          description: Payment methods
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PaymentMethod"
+
+  /orders:
+    get:
+      operationId: listOrders
+      tags: [orders]
+      summary: List user orders
+      responses:
+        "200":
+          description: Orders list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Create a payment order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      summary: Get order detail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Order detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /orders/{id}/proof:
+    post:
+      operationId: uploadOrderProof
+      tags: [orders]
+      summary: Upload payment proof
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProofInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  # Admin endpoints
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Get admin overview stats
+      responses:
+        "200":
+          description: Overview stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /admin/revenue:
+    get:
+      operationId: getAdminRevenue
+      tags: [admin]
+      summary: Get revenue analytics
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [7d, 30d, 90d, all]
+      responses:
+        "200":
+          description: Revenue stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevenueStats"
+
+  /admin/users:
+    get:
+      operationId: listAdminUsers
+      tags: [admin]
+      summary: List all users
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: number
+        - name: offset
+          in: query
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Users list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUsersResponse"
+
+  /admin/users/{id}:
+    get:
+      operationId: getAdminUser
+      tags: [admin]
+      summary: Get user detail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserDetail"
+
+  /admin/users/{id}/credits:
+    post:
+      operationId: adjustUserCredits
+      tags: [admin]
+      summary: Add/remove/set user credits
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminCreditAction"
+      responses:
+        "200":
+          description: Credits adjusted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserDetail"
+
+  /admin/users/{id}/toggle:
+    post:
+      operationId: toggleUserStatus
+      tags: [admin]
+      summary: Enable/disable user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Status toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserDetail"
+
+  /admin/token-pricing:
+    get:
+      operationId: listTokenPricing
+      tags: [admin]
+      summary: List token pricing configs
+      responses:
+        "200":
+          description: Token pricing list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TokenPricing"
+    post:
+      operationId: createTokenPricing
+      tags: [admin]
+      summary: Create token pricing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TokenPricingInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPricing"
+
+  /admin/token-pricing/{id}:
+    patch:
+      operationId: updateTokenPricing
+      tags: [admin]
+      summary: Update token pricing
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TokenPricingUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPricing"
+
+  /admin/packages:
+    get:
+      operationId: listAdminPackages
+      tags: [admin]
+      summary: List all packages (admin)
+      responses:
+        "200":
+          description: Packages list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Package"
+    post:
+      operationId: createPackage
+      tags: [admin]
+      summary: Create credit package
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PackageInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Package"
+
+  /admin/packages/{id}:
+    patch:
+      operationId: updatePackage
+      tags: [admin]
+      summary: Update credit package
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PackageUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Package"
+    delete:
+      operationId: deletePackage
+      tags: [admin]
+      summary: Delete credit package
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /admin/payment-methods:
+    get:
+      operationId: listAdminPaymentMethods
+      tags: [admin]
+      summary: List all payment methods (admin)
+      responses:
+        "200":
+          description: Payment methods
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminPaymentMethod"
+    post:
+      operationId: createPaymentMethod
+      tags: [admin]
+      summary: Create payment method
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentMethodInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPaymentMethod"
+
+  /admin/payment-methods/{id}:
+    patch:
+      operationId: updatePaymentMethod
+      tags: [admin]
+      summary: Update payment method
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentMethodUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPaymentMethod"
+    delete:
+      operationId: deletePaymentMethod
+      tags: [admin]
+      summary: Delete payment method
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /admin/orders:
+    get:
+      operationId: listAdminOrders
+      tags: [admin]
+      summary: List all payment orders (admin)
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: number
+        - name: offset
+          in: query
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Orders list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrdersResponse"
+
+  /admin/orders/{id}/approve:
+    post:
+      operationId: approveOrder
+      tags: [admin]
+      summary: Approve payment order
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrder"
+
+  /admin/orders/{id}/proof-validation:
+    post:
+      operationId: validateOrderProof
+      tags: [admin]
+      summary: Override payment proof validation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProofValidationInput"
+      responses:
+        "200":
+          description: Validation updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrder"
+        "400":
+          description: Invalid validation request
+
+  /admin/orders/{id}/reject:
+    post:
+      operationId: rejectOrder
+      tags: [admin]
+      summary: Reject payment order
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RejectOrderInput"
+      responses:
+        "200":
+          description: Rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOrder"
+
+  /admin/ai-usage:
+    get:
+      operationId: listAiUsage
+      tags: [admin]
+      summary: List AI usage records
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: number
+        - name: offset
+          in: query
+          schema:
+            type: number
+      responses:
+        "200":
+          description: AI usage list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiUsageResponse"
+
+  /admin/audit-logs:
+    get:
+      operationId: listAuditLogs
+      tags: [admin]
+      summary: List audit logs
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: number
+        - name: offset
+          in: query
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Audit logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogsResponse"
+
+  /admin/settings:
+    get:
+      operationId: getAdminSettings
+      tags: [admin]
+      summary: Get admin settings
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettings"
+    patch:
+      operationId: updateAdminSettings
+      tags: [admin]
+      summary: Update admin settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminSettingsUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSettings"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    RequestUploadUrlBody:
+      type: object
+      required: [name, size, contentType, purpose]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        size:
+          type: number
+          minimum: 1
+        contentType:
+          type: string
+          minLength: 1
+        purpose:
+          type: string
+          enum: [qris, payment-proof]
+
+    RequestUploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath, metadata]
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+
+    RegisterInput:
+      type: object
+      required: [email, password, name]
+      properties:
+        email:
+          type: string
+          
+        password:
+          type: string
+          minLength: 8
+        name:
+          type: string
+          minLength: 1
+
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [user, token]
+      properties:
+        user:
+          $ref: "#/components/schemas/UserProfile"
+        token:
+          type: string
+
+    UserProfile:
+      type: object
+      required: [id, email, name, role, credits, isEnabled, createdAt]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [USER, ADMIN]
+        credits:
+          type: number
+        isEnabled:
+          type: boolean
+        createdAt:
+          type: string
+
+    Conversation:
+      type: object
+      required: [id, userId, title, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        title:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        messageCount:
+          type: ["number", "null"]
+
+    ConversationInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+
+    ConversationUpdate:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+
+    ConversationDetail:
+      type: object
+      required: [id, userId, title, createdAt, updatedAt, messages]
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        title:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+
+    Message:
+      type: object
+      required: [id, conversationId, role, content, createdAt]
+      properties:
+        id:
+          type: string
+        conversationId:
+          type: string
+        role:
+          type: string
+          enum: [user, assistant, system]
+        content:
+          type: string
+        createdAt:
+          type: string
+
+    CreditBalance:
+      type: object
+      required: [credits, userId]
+      properties:
+        credits:
+          type: number
+        userId:
+          type: string
+
+    CreditLedgerEntry:
+      type: object
+      required: [id, userId, amount, balanceBefore, balanceAfter, type, description, createdAt]
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        amount:
+          type: number
+        balanceBefore:
+          type: number
+        balanceAfter:
+          type: number
+        type:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+
+    CreditHistoryResponse:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CreditLedgerEntry"
+        total:
+          type: number
+
+    Package:
+      type: object
+      required: [id, name, price, credits, isActive]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        price:
+          type: number
+        credits:
+          type: number
+        isActive:
+          type: boolean
+        description:
+          type: ["string", "null"]
+
+    PackageInput:
+      type: object
+      required: [name, price, credits]
+      properties:
+        name:
+          type: string
+        price:
+          type: number
+        credits:
+          type: number
+        description:
+          type: string
+        isActive:
+          type: boolean
+
+    PackageUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        price:
+          type: number
+        credits:
+          type: number
+        description:
+          type: string
+        isActive:
+          type: boolean
+
+    PaymentMethod:
+      type: object
+      required: [id, name, type, isActive]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        isActive:
+          type: boolean
+        details:
+          type: object
+          additionalProperties: true
+
+    AdminPaymentMethod:
+      type: object
+      required: [id, name, type, isActive, createdAt]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        isActive:
+          type: boolean
+        details:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+
+    PaymentMethodInput:
+      type: object
+      required: [name, type]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+        isActive:
+          type: boolean
+
+    PaymentMethodUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+        isActive:
+          type: boolean
+
+    Order:
+      type: object
+      required: [id, userId, packageId, methodId, amount, credits, status, createdAt]
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        packageId:
+          type: string
+        methodId:
+          type: string
+        amount:
+          type: number
+        credits:
+          type: number
+        status:
+          type: string
+          enum: [PENDING, PAID, REJECTED, CANCELLED]
+        proofUrl:
+          type: ["string", "null"]
+        proofPath:
+          type: ["string", "null"]
+        proofValidationStatus:
+          type: string
+          enum: [NOT_SUBMITTED, PENDING, VALID, INVALID, REVIEW]
+        proofTransferDate:
+          type: ["string", "null"]
+        proofValidationConfidence:
+          type: ["number", "null"]
+        proofValidationReason:
+          type: ["string", "null"]
+        proofValidationSource:
+          type: ["string", "null"]
+        proofValidatedAt:
+          type: ["string", "null"]
+        adminNote:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        package:
+          $ref: "#/components/schemas/Package"
+        paymentMethod:
+          $ref: "#/components/schemas/PaymentMethod"
+
+    OrderInput:
+      type: object
+      required: [packageId, methodId]
+      properties:
+        packageId:
+          type: string
+        methodId:
+          type: string
+
+    ProofInput:
+      type: object
+      required: [proofPath]
+      properties:
+        proofPath:
+          type: string
+          pattern: "^/objects/"
+
+    AdminOrder:
+      type: object
+      required: [id, userId, packageId, methodId, amount, credits, status, createdAt]
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        packageId:
+          type: string
+        methodId:
+          type: string
+        amount:
+          type: number
+        credits:
+          type: number
+        status:
+          type: string
+        proofUrl:
+          type: ["string", "null"]
+        proofPath:
+          type: ["string", "null"]
+        proofValidationStatus:
+          type: string
+          enum: [NOT_SUBMITTED, PENDING, VALID, INVALID, REVIEW]
+        proofTransferDate:
+          type: ["string", "null"]
+        proofValidationConfidence:
+          type: ["number", "null"]
+        proofValidationReason:
+          type: ["string", "null"]
+        proofValidationSource:
+          type: ["string", "null"]
+        proofValidatedAt:
+          type: ["string", "null"]
+        adminNote:
+          type: ["string", "null"]
+        approvedBy:
+          type: ["string", "null"]
+        approvedAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        user:
+          $ref: "#/components/schemas/UserProfile"
+        package:
+          $ref: "#/components/schemas/Package"
+        paymentMethod:
+          $ref: "#/components/schemas/PaymentMethod"
+
+    RejectOrderInput:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+
+    ProofValidationInput:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [VALID, INVALID]
+        reason:
+          type: string
+
+    AdminStats:
+      type: object
+      required: [totalUsers, totalConversations, totalMessages, totalCreditsIssued, totalCreditsUsed, pendingOrders, totalRevenue]
+      properties:
+        totalUsers:
+          type: number
+        totalConversations:
+          type: number
+        totalMessages:
+          type: number
+        totalCreditsIssued:
+          type: number
+        totalCreditsUsed:
+          type: number
+        pendingOrders:
+          type: number
+        totalRevenue:
+          type: number
+        activeUsers:
+          type: number
+
+    RevenueStats:
+      type: object
+      required: [totalRevenue, creditsSold, creditsUsed, totalRequests, inputTokens, outputTokens, estimatedCost, estimatedRevenue, estimatedMargin, totalUsers]
+      properties:
+        totalRevenue:
+          type: number
+        creditsSold:
+          type: number
+        creditsUsed:
+          type: number
+        totalRequests:
+          type: number
+        inputTokens:
+          type: number
+        outputTokens:
+          type: number
+        estimatedCost:
+          type: number
+        estimatedRevenue:
+          type: number
+        estimatedMargin:
+          type: number
+        totalUsers:
+          type: number
+
+    AdminUser:
+      type: object
+      required: [id, email, name, role, credits, isEnabled, createdAt]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        credits:
+          type: number
+        isEnabled:
+          type: boolean
+        createdAt:
+          type: string
+        conversationCount:
+          type: number
+        messageCount:
+          type: number
+
+    AdminUsersResponse:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminUser"
+        total:
+          type: number
+
+    AdminUserDetail:
+      type: object
+      required: [id, email, name, role, credits, isEnabled, createdAt]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        credits:
+          type: number
+        isEnabled:
+          type: boolean
+        createdAt:
+          type: string
+        conversationCount:
+          type: number
+        messageCount:
+          type: number
+        totalCreditsReceived:
+          type: number
+        totalCreditsSpent:
+          type: number
+        recentLedger:
+          type: array
+          items:
+            $ref: "#/components/schemas/CreditLedgerEntry"
+
+    AdminCreditAction:
+      type: object
+      required: [action, reason]
+      properties:
+        action:
+          type: string
+          enum: [add, remove, set, reset]
+        amount:
+          type: number
+        reason:
+          type: string
+
+    TokenPricing:
+      type: object
+      required: [id, model, inputPrice, outputPrice, tokenUnit, minimumCharge, rounding, isActive, createdAt]
+      properties:
+        id:
+          type: string
+        model:
+          type: string
+        inputPrice:
+          type: number
+        outputPrice:
+          type: number
+        tokenUnit:
+          type: number
+        minimumCharge:
+          type: number
+        rounding:
+          type: string
+          enum: [floor, ceil, round]
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    TokenPricingInput:
+      type: object
+      required: [model, inputPrice, outputPrice, tokenUnit, minimumCharge, rounding]
+      properties:
+        model:
+          type: string
+        inputPrice:
+          type: number
+        outputPrice:
+          type: number
+        tokenUnit:
+          type: number
+        minimumCharge:
+          type: number
+        rounding:
+          type: string
+          enum: [floor, ceil, round]
+        isActive:
+          type: boolean
+
+    TokenPricingUpdate:
+      type: object
+      properties:
+        model:
+          type: string
+        inputPrice:
+          type: number
+        outputPrice:
+          type: number
+        tokenUnit:
+          type: number
+        minimumCharge:
+          type: number
+        rounding:
+          type: string
+          enum: [floor, ceil, round]
+        isActive:
+          type: boolean
+
+    AiUsageRecord:
+      type: object
+      required: [id, userId, model, inputTokens, outputTokens, inputCost, outputCost, totalCost, createdAt]
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        conversationId:
+          type: ["string", "null"]
+        messageId:
+          type: ["string", "null"]
+        model:
+          type: string
+        inputTokens:
+          type: number
+        outputTokens:
+          type: number
+        inputCost:
+          type: number
+        outputCost:
+          type: number
+        totalCost:
+          type: number
+        createdAt:
+          type: string
+        userName:
+          type: ["string", "null"]
+
+    AiUsageResponse:
+      type: object
+      required: [items, total, totalInputTokens, totalOutputTokens, totalCost]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiUsageRecord"
+        total:
+          type: number
+        totalInputTokens:
+          type: number
+        totalOutputTokens:
+          type: number
+        totalCost:
+          type: number
+
+    AuditLogEntry:
+      type: object
+      required: [id, action, resource, createdAt]
+      properties:
+        id:
+          type: string
+        userId:
+          type: ["string", "null"]
+        userEmail:
+          type: ["string", "null"]
+        action:
+          type: string
+        resource:
+          type: string
+        resourceId:
+          type: ["string", "null"]
+        details:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+
+    AuditLogsResponse:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditLogEntry"
+        total:
+          type: number
+
+    AdminOrdersResponse:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminOrder"
+        total:
+          type: number
+
+    AdminSettings:
+      type: object
+      required: [appName, registrationEnabled, defaultCredits]
+      properties:
+        appName:
+          type: string
+        registrationEnabled:
+          type: boolean
+        defaultCredits:
+          type: number
+        maintenanceMode:
+          type: boolean
+
+    AdminSettingsUpdate:
+      type: object
+      properties:
+        appName:
+          type: string
+        registrationEnabled:
+          type: boolean
+        defaultCredits:
+          type: number
+        maintenanceMode:
+          type: boolean

@@ -1,0 +1,31 @@
+modules = ["nodejs-24", "python-base-3.13"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
+
+[userenv]
+
+[userenv.shared]
+AI_MODEL = "deepseek-v4-pro"
+AUTH_SECRET = "askmeeai-super-secret-key-change-in-production-2024"
+NEXT_PUBLIC_APP_NAME = "AskMeAI"
+NINEINFERENCE_BASE_URL = "https://9inference.cloud/v1"
+
+[nix]
+channel = "stable-25_05"

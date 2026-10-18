@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "AskMeAI"
+description = "A full-stack AI chat SaaS platform like ChatGPT with streaming AI, credit system, manual payments, and complete admin dashboard."
+version = "1.0.0"
+id = "artifacts/askmeeai"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19332
+
+[services.development]
+run = "pnpm --filter @workspace/askmeeai run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/askmeeai", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/askmeeai/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19332"
+BASE_PATH = "/"
